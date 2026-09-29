@@ -1,0 +1,36 @@
+# ---- Generated data (hundreds of MB; anyone can rebuild it with `wch run`) ----
+data/
+
+# ---- Python environments and caches ----
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- Trained model files (rebuilt by `wch train`; binary and version-specific) ----
+*.joblib
+
+# ---- Old label backups made by `wch sample --force` ----
+labels/*_backup_*.csv
+
+# ---- Secrets / local settings ----
+.env
+.streamlit/secrets.toml
+
+# ---- Editors and operating systems ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# NOT ignored on purpose (commit these):
+#   labels/*_points.csv and labels/*_labels.csv   your hand-made labels
+#   docs/                                         screenshots and result summaries
+#   config/, src/, tests/, app/, scripts/

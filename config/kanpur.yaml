@@ -1,0 +1,69 @@
+# Study-area configuration. This file is the only thing you edit to run a new analysis.
+
+aoi:
+  name: kanpur
+  # [min_lon, min_lat, max_lon, max_lat] in WGS84 degrees (~24 km x 20 km).
+  # Covers central Kanpur, the western/southern outskirts and Shuklaganj across the Ganga.
+  bbox: [80.22, 26.38, 80.46, 26.56]
+
+# Same months in both years: Feb-Mar is after winter fog and at wheat peak greenness,
+# so farmland is clearly "vegetation" and we avoid confusing harvest with construction.
+periods:
+  before: {start: 2019-02-01, end: 2019-03-31}
+  after:  {start: 2026-02-01, end: 2026-03-31}
+
+stac:
+  url: https://earth-search.aws.element84.com/v1
+  # Both are searched and merged. For a date present in both, the first listed wins.
+  # Collection 1 (ESA's consistent reprocessing) has gaps in 2019; the older collection fills them.
+  collections: [sentinel-2-c1-l2a, sentinel-2-l2a]
+  max_cloud_cover: 20        # % of the whole 110 km tile; per-pixel masking handles the rest
+  pair_cloud_limit: 5        # only used by method "single": candidate dates for season matching
+
+processing:
+  # STAC asset names: blue/green/red/nir = B02/B03/B04/B08 (10 m); swir16 = B11 (20 m,
+  # resampled to 10 m), needed for the built-up (NDBI) and water (MNDWI) indices.
+  bands: [blue, green, red, nir, swir16]
+  resolution: 10                   # metres
+  change_threshold: 0.2            # |NDVI after - before| above this counts as change
+
+compositing:
+  method: median       # "median" = cloud-masked median of many dates (Stage 2)
+                       # "single" = one season-matched date per period (Stage 1 baseline)
+  max_scenes: 8        # dates per period, spread evenly across the window
+  min_clear_obs: 2     # pixels with fewer cloud-free dates are left empty (not trusted)
+
+landcover:             # simple rules applied to each composite (no re-download when changed)
+  water_mndwi: 0.0       # MNDWI above this = water
+  vegetation_ndvi: 0.4   # NDVI at or above this = vegetation
+  bare_ndvi: 0.2         # NDVI below this = built-up/bare; in between = sparse vegetation
+
+timeseries:            # `wch timeseries`: monthly NDVI per zone, coarse resolution
+  start_year: 2019
+  end_year: 2026
+  resolution: 100            # metres (100 m keeps 8 years of data small)
+  scenes_per_month: 2        # clearest N dates per month
+  max_cloud_cover: 30
+  min_zone_clear_fraction: 0.5
+  anomaly_z: 3.5             # robust z-score above this = unusual month for that zone
+
+labels:                # `wch sample`: which pixels to label in the app's Label tab
+  dir: labels                # kept outside data/ so labels can be committed with the code
+  n_points: 300
+  min_spacing_m: 150         # points at least this far apart
+  seed: 42
+  strata:                    # share of points per stratum (construction is rare, so oversample candidates)
+    veg_to_built: 0.35       # vegetation -> built-up/bare
+    sparse_to_built: 0.20    # sparse vegetation -> built-up/bare
+    other_change: 0.20       # built -> veg, water change, other
+    stable: 0.25             # no class change
+
+model:                 # `wch train`: random forest + evaluation
+  n_estimators: 200
+  block_size_m: 2000         # spatial cross-validation: 2 km blocks are never split between train/test
+  cv_folds: 5
+  probability_threshold: 0.5
+  seed: 42
+
+output_dir: data/processed
+catalog_dir: data/catalog

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "what-changed-here"
+version = "0.1.0"
+description = "Detect and explain land-use change from public Sentinel-2 imagery."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "xarray>=2024.1",
+    "dask[array]>=2024.1",
+    "rasterio>=1.3.9",      # GDAL bindings: reads/writes GeoTIFFs (Windows wheels on PyPI)
+    "rioxarray>=0.15",      # adds .rio (CRS, reprojection, GeoTIFF writing) to xarray
+    "pystac-client>=0.7",   # searches STAC APIs
+    "odc-stac>=0.3.9",      # loads STAC items into xarray on a common pixel grid
+    "pyyaml>=6.0",
+    "matplotlib>=3.8",      # colormaps for map layers
+    "scikit-learn>=1.3",    # random forest, cross-validation, metrics (Stage 4)
+    "joblib>=1.3",          # saving the trained model
+    "streamlit>=1.32",
+    "folium>=0.15",
+    "streamlit-folium>=0.18",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+wch = "wch.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# warnings raised inside rasterio/rioxarray/affine, not our code
+filterwarnings = ["ignore::PendingDeprecationWarning"]
